@@ -96,7 +96,6 @@ frappe.ui.form.on('Animal Overview', {
 			'mucous_membrane',
 			'capillary_refill_time',
 			'vs_weight:weight',
-			'notes'
 		];
 
 		const data = fields.reduce(function(dict, x) {
@@ -220,7 +219,6 @@ function _clear_vital_signs(frm) {
 		'mucous_membrane',
 		'capillary_refill_time',
 		'vs_weight',
-		'notes'
 	];
 	fields.forEach((field) => frm.set_value(field, ''));
 }
@@ -370,7 +368,7 @@ function _get_table_rows(records, fields) {
 function _get_table_header(fields) {
     // correspondingly
     // posting_date, name, description, price
-    const width = ['10%', '20%', '55%', '15%'];
+    const width = ['10%', '10%', '55%', '15%'];
 	const header_texts = fields.map((field) =>
 		field.split('_')
 			.map((s) => s.charAt(0).toUpperCase() + s.substring(1))
