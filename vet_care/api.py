@@ -107,10 +107,14 @@ def get_medical_records(patient):
 
 
 @frappe.whitelist()
-def save_invoice(items, patient, customer, sales_person, existing_invoice=None):
+def save_invoice(items, patient, customer, **kwargs):
     items = json.loads(items)
+    sales_person = kwargs.get('sales_person')
+    existing_invoice = kwargs.get('existing_invoice')
+    discount_amount = kwargs.get('discount_amount')
 
     pos_profile = frappe.db.get_single_value('Vetcare Settings', 'pos_profile')
+    taxes_and_charges = frappe.db.get_value('POS Profile', pos_profile, 'taxes_and_charges')
 
     if not pos_profile:
         frappe.throw(_('Please set POS Profile under Vetcare Settings'))
@@ -122,7 +126,8 @@ def save_invoice(items, patient, customer, sales_person, existing_invoice=None):
             'customer': customer,
             'due_date': today(),
             'pos_profile': pos_profile,
-            'pb_sales_person': sales_person
+            'pb_sales_person': sales_person,
+            'taxes_and_charges': taxes_and_charges
         })
     else:
         sales_invoice = frappe.get_doc('Sales Invoice', existing_invoice)
@@ -135,7 +140,12 @@ def save_invoice(items, patient, customer, sales_person, existing_invoice=None):
             'rate': item.get('rate')
         })
 
+    if discount_amount:
+        sales_invoice.apply_discount_on = 'Grand Total'
+        sales_invoice.discount_amount = float(discount_amount)
+
     sales_invoice.set_missing_values()
+    sales_invoice.set_taxes()
     sales_invoice.save()
 
     return sales_invoice
@@ -191,9 +201,13 @@ def get_clinical_history(patient, filter_length):
             si.name,
             si.posting_date,
             CONCAT(
+                'INVOICE: ',
                 ROUND(si_item.qty, 2),
                 ' x ',
-                si_item.item_code
+                si_item.item_name,
+                ' (',
+                si_item.item_code,
+                ')'
             ) AS description,
             ROUND(si_item.amount, 3) AS price,
             si_item.creation,
@@ -224,12 +238,13 @@ def get_clinical_history(patient, filter_length):
 
 
 @frappe.whitelist()
-def make_patient_activity(patient, activity_items):
+def make_patient_activity(patient, activity_items, physician):
     activity_items = json.loads(activity_items)
 
     patient_activity = frappe.get_doc({
         'doctype': 'Patient Activity',
         'patient': patient,
+        'physician': physician,
         'posting_date': today()
     })
 

@@ -1,8 +1,7 @@
-async function save_invoice(items, patient, customer, sales_person, existing_invoice) {
-    console.log(existing_invoice);
+async function save_invoice(items, patient, customer, sales_person, existing_invoice, discount_amount) {
     const { message: invoice } = await frappe.call({
 		method: 'vet_care.api.save_invoice',
-		args: { items, patient, customer, sales_person, existing_invoice },
+		args: { items, patient, customer, sales_person, existing_invoice, discount_amount },
 	});
     return invoice;
 }
@@ -32,10 +31,10 @@ async function get_clinical_history(patient, filter_length) {
     return clinical_history;
 }
 
-async function make_patient_activity(patient, activity_items) {
+async function make_patient_activity(patient, activity_items, physician) {
   const { message: patient_activity } = await frappe.call({
     method: 'vet_care.api.make_patient_activity',
-    args: { patient, activity_items },
+    args: { patient, activity_items, physician },
   });
   return patient_activity;
 }
