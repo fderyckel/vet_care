@@ -1,6 +1,8 @@
 // Copyright (c) 2020, 9T9IT and contributors
 // For license information, please see license.txt
+
 {% include 'vet_care/vet_care/doctype/animal_overview/data.js' %}
+{% include 'vet_care/vet_care/doctype/animal_overview/print.js' %}
 {% include 'vet_care/vet_care/doctype/animal_overview/payment_dialog.js' %}
 {% include 'vet_care/vet_care/doctype/animal_overview/custom_buttons.js' %}
 
@@ -124,9 +126,30 @@ frappe.ui.form.on('Animal Overview', {
         const patient_activity = await make_patient_activity(
             frm.doc.animal,
             frm.doc.activity_items,
+            frm.doc.sales_person,
+        );
+        frappe.show_alert(`Patient Activity ${patient_activity.name} created`);
+        frm.set_value('activity_items', []);
+
+        // refresh clinical history
+        _set_clinical_history(frm);
+    },
+    // TODO: make a decorator for above
+    new_print_activity: async function(frm) {
+      if (!frm.doc.animal) {
+            frappe.throw(__('Animal is required.'));
+            return;
+        }
+
+        const patient_activity = await make_patient_activity(
+            frm.doc.animal,
+            frm.doc.activity_items,
             frm.doc.physician,
         );
         frappe.show_alert(`Patient Activity ${patient_activity.name} created`);
+        print_activity(frm);
+
+        frm.activity_items = [...frm.doc.activity_items];
         frm.set_value('activity_items', []);
 
         // refresh clinical history
@@ -139,6 +162,9 @@ frappe.ui.form.on('Animal Overview', {
     },
     discount_amount: function(frm) {
       _update_total(frm);
+    },
+    print_history: function(frm) {
+      print_history(frm);
     },
 });
 
@@ -244,6 +270,8 @@ function _clear_vital_signs(frm) {
 
 async function _set_clinical_history(frm) {
 	const clinical_history = await get_clinical_history(frm.doc.animal, _filter_length);
+	frm.clinical_history = clinical_history;
+
 	const fields = ['posting_date', 'name', 'description', 'price'];
 
 	const table_rows = _get_table_rows(clinical_history, fields);
@@ -310,6 +338,7 @@ function _set_actions(frm) {
 			if (!frm.doc.invoice) {
 				frappe.throw(__('Please select invoice above'));
 			}
+
 			await save_invoice(
 			    frm.doc.items,
 			    frm.doc.animal,
@@ -318,9 +347,18 @@ function _set_actions(frm) {
                 frm.doc.invoice,
                 frm.doc.discount_amount,
             );
+
 			const values = await show_payment_dialog(frm);
+			if (!values.payments) {
+			  frappe.throw(__('No payments found. Please put payment details.'));
+			}
+
 			const invoice = await pay_invoice(frm.doc.invoice, values.payments);
 			frappe.show_alert(`Sales Invoice ${invoice.name} paid`);
+
+            if (values.__print) {
+              _print_doc('Sales Invoice', invoice.name, 'Standard', 0);
+            }
 
 			frm.set_value('invoice', '');
 			frm.set_value('items', []);
@@ -445,4 +483,21 @@ function _set_form_buttons_color() {
     $('button[data-fieldname="new_activity"]').addClass('btn-primary');
     $('button[data-fieldname="vs_save"]').addClass('btn-primary');
     $('button[data-fieldname="save_patient"]').addClass('btn-primary');
+}
+
+
+function _print_doc(doctype, docname, print_format, no_letterhead) {
+  // from /frappe/public/js/frappe/form/print.js
+  const w = window.open(
+    frappe.urllib.get_full_url(
+      `/printview?doctype=${encodeURIComponent(doctype)}&name=${encodeURIComponent(
+        docname
+      )}&trigger_print=1&format=${encodeURIComponent(print_format)}&no_letterhead=${
+        no_letterhead ? '1' : '0'
+      }&_lang=en`
+    )
+  );
+  if (!w) {
+    frappe.msgprint(__('Please enable pop-ups'));
+  }
 }
