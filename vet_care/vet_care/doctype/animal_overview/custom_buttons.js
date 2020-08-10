@@ -42,10 +42,16 @@ function _create_patient_booking(frm) {
 
 
 function _view_calendar(frm) {
+    const route_options = {}
+    if (frm.doc.default_owner && frm.doc.animal) {
+        route_options['customer'] = frm.doc.default_owner;
+        route_options['patient'] = frm.doc.animal;
+    }
     frappe.set_route(
         'List',
         'Patient Booking',
-        'Calendar'
+        'Calendar',
+        route_options,
     );
 }
 
@@ -55,4 +61,5 @@ function _refresh(frm) {
     _clear_vital_signs(frm);
     frm.set_value('default_owner', null);
     frm.set_value('owner_name', null);
+    frm.save();
 }
