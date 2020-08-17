@@ -3,8 +3,10 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-import frappe
 from frappe.model.document import Document
+from vet_care.utils import check_pos_bahrain
+
 
 class VetcareSettings(Document):
-	pass
+	def validate(self):
+		check_pos_bahrain(True)
