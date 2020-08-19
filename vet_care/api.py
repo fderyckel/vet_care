@@ -216,7 +216,8 @@ def get_clinical_history(patient, filter_length):
                 ) AS description,
                 ROUND(si_item.amount, 3) AS price,
                 si_item.creation,
-                'si' AS ref_type
+                'si' AS ref_type,
+                '' AS attach
             FROM `tabSales Invoice Item` si_item
             INNER JOIN `tabSales Invoice` si ON si.name = si_item.parent
             WHERE si.patient = %s AND si.docstatus = 1)
@@ -232,7 +233,8 @@ def get_clinical_history(patient, filter_length):
                 ) AS description,
                 '' AS price,
                 pa_item.creation,
-                'pa' AS ref_type
+                'pa' AS ref_type,
+                pa_item.attach
             FROM `tabPatient Activity Item` pa_item
             INNER JOIN `tabPatient Activity` pa on pa.name = pa_item.parent
             WHERE pa.patient = %s)
@@ -264,7 +266,8 @@ def make_patient_activity(patient, activity_items, sales_person=None):
     for activity_item in activity_items:
         patient_activity.append('items', {
             'activity_type': activity_item['activity_type'],
-            'description': activity_item['description']
+            'description': activity_item['description'],
+            'attach': activity_item['attach']
         })
 
     patient_activity.save()
