@@ -11,13 +11,19 @@ let _tax_rate = 0;
 
 frappe.ui.form.on('Animal Overview', {
     onload: function(frm) {
-        get_tax_rate().then((data) => _tax_rate = data);
-        get_skip_calendar().then((skip_calendar) => frm.__skip_calendar = skip_calendar);
-        get_selling_price_list().then((selling_price_list) => frm.__selling_price_list = selling_price_list);
         frm.set_query('default_owner', function() {
             return {
                 query: "erpnext.controllers.queries.customer_query",
             };
+        });
+        get_tax_rate().then((data) => _tax_rate = data);
+        get_skip_calendar().then((skip_calendar) => frm.__skip_calendar = skip_calendar);
+        get_selling_price_list().then((selling_price_list) => frm.__selling_price_list = selling_price_list);
+        get_show_zip_code().then((show_zip_code) => {
+            // read only fields can't be set through set_df_property
+            if (!show_zip_code) {
+                $('div[title="zip_code"]').hide();
+            }
         });
     },
     refresh: function(frm) {
@@ -76,15 +82,6 @@ frappe.ui.form.on('Animal Overview', {
             _clear_animal_details(frm);
             const animal = await get_first_animal_by_owner(frm.doc.default_owner);
             if (animal) frm.set_value('animal', animal.name);
-            const {
-                message: customer
-            } = await frappe.db.get_value(
-                'Customer', {
-                    'name': frm.doc.default_owner
-                },
-                'customer_name'
-            );
-            if (customer) frm.set_value('owner_name', customer.customer_name);
         }
     },
     is_new_patient: function(frm) {
