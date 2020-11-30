@@ -83,6 +83,8 @@ frappe.ui.form.on('Animal Overview', {
             const animal = await get_first_animal_by_owner(frm.doc.default_owner);
             if (animal) frm.set_value('animal', animal.name);
         }
+        // for navigating to Patient; because route options won't work
+        frappe.__custom_options = {'customer': frm.doc.default_owner};
     },
     is_new_patient: function(frm) {
         if (frm.doc.is_new_patient) {
@@ -242,7 +244,8 @@ async function _set_animal_details(frm) {
 
 
 function _set_attach_read_only(frm) {
-  frm.set_df_property('attach', 'read_only', frm.doc.animal ? 0 : 1);
+  frm.set_df_property('attach', 'read_only', 1);
+//  frm.set_df_property('attach', 'read_only', frm.doc.animal ? 0 : 1);
 }
 
 
